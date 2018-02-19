@@ -1,0 +1,24 @@
+{
+  "name": "howlplay-main-server",
+  "version": "1.0.0",
+  "description": "[![Build Status](https://travis-ci.org/wolfbeacon/howlplay-main-server.svg?branch=master)](https://travis-ci.org/wolfbeacon/howlplay-main-server)",
+  "main": "server.js",
+  "dependencies": {
+    "restify": "^6.3.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wolfbeacon/howlplay-main-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wolfbeacon/howlplay-main-server/issues"
+  },
+  "homepage": "https://github.com/wolfbeacon/howlplay-main-server#readme"
+}

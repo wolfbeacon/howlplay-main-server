@@ -4,7 +4,9 @@
   "description": "[![Build Status](https://travis-ci.org/wolfbeacon/howlplay-main-server.svg?branch=master)](https://travis-ci.org/wolfbeacon/howlplay-main-server)",
   "main": "server.js",
   "dependencies": {
-    "restify": "^6.3.4"
+    "restify": "^6.3.4",
+    "restify-errors": "^5.0.0",
+    "restify-plugins": "^1.6.0"
   },
   "devDependencies": {},
   "scripts": {

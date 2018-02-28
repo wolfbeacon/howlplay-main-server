@@ -1,26 +1,20 @@
 {
   "name": "howlplay-main-server",
   "version": "1.0.0",
-  "description": "[![Build Status](https://travis-ci.org/wolfbeacon/howlplay-main-server.svg?branch=master)](https://travis-ci.org/wolfbeacon/howlplay-main-server)",
+  "description": "Main server for hosting quiz building options",
   "main": "server.js",
-  "dependencies": {
-    "restify": "^6.3.4",
-    "restify-errors": "^5.0.0",
-    "restify-plugins": "^1.6.0"
-  },
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/wolfbeacon/howlplay-main-server.git"
-  },
-  "author": "",
+  "author": "Sean van Wyk",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/wolfbeacon/howlplay-main-server/issues"
-  },
-  "homepage": "https://github.com/wolfbeacon/howlplay-main-server#readme"
+  "repository": "  ",
+  "dependencies": {
+    "pg": "^7.4.1",
+    "pg-hstore": "^2.3.2",
+    "restify": "^6.3.4",
+    "restify-errors": "^6.0.0",
+    "restify-plugins": "^1.6.0",
+    "sequelize": "^4.33.4"
+  }
 }

@@ -1,5 +1,27 @@
 //Imports and Requirements
 var restify = require('restify');
+var Sequelize = require('sequelize');
+
+//Database config
+var env = "dev";
+var config = require('./config.json')[env];
+var password = config.password ? config.password : null;
+
+//initiate database connection
+var sequelize = new Sequelize(
+    dialect: config.dialect,
+    database: config.database,
+    uase: config.user,
+    password: config.password,
+    {
+        port: config.port,
+        host: config.server,
+        logging: console.log,
+        define: {
+            timestamps: false
+        }
+    }
+);
 
 //Global Constants
 var WIP = "Endpoint not implemented yet";

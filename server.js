@@ -43,8 +43,8 @@ sequelize
 //Models
 const Quizzes = sequelize.define('quizzes',{
   id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
-  name: {type: Sequelize.STRING(512)},
-  questions: {type: Sequelize.STRING},
+  name: {type: Sequelize.STRING(512),},
+  questions: {type: Sequelize.STRING,},
   access_token: {type: Sequelize.STRING(128)}
 });
 
@@ -65,18 +65,37 @@ server.listen(8080, function() {
 // Quiz End Points
 // Create New Quiz
 server.post('/quiz', function(req, res, next) {
+  if (req.params.name == null || req.params.questions == null) {
+    res.send(400);
+  }
+  else {
   Quizzes.create({
     name: req.params.name,
     questions: JSON.stringify(req.params.questions),
     access_token: uuidv4()
   }).then(quiz => {
-    res.send(200, JSON.stringify(quiz));
+    res.send(200, quiz);
   });
+  }
   next();
 });
+
 // Get Quiz
-server.get('/quiz/:id', function(req, res, next) {
-  res.send(200, WIP);
+server.get('/quiz/:quizId', function(req, res, next) {
+  var quizId = req.params.quizId
+  Quizzes.findOne({
+    attributes: ['id','name','questions'],
+    where: {
+      "id": quizId
+    }
+  }).then(Quiz => {
+    if(Quiz == null){
+       res.send(400);
+    }
+    else {
+      var outString = (Quiz);
+      res.send(200, outString)
+ }});
   next();
 });
 // Update Quiz

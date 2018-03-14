@@ -23,11 +23,23 @@ var sequelize = new Sequelize(
     }
 );
 
+//Models
+const quizzes = sequelize.define('quizzes',{
+  name: {type: Sequelize.STRING(512)},
+  questions: {type: Sequelize.STRING},
+  access_token: {type: Sequelize.STRING(128)}
+
+});
+
 //Global Constants
-var WIP = "Endpoint not implemented yet";
+var WIP = "Endpoint not implemented yet\n";
 
 // Start Server
 var server = restify.createServer();
+
+//Initualize Body Parser
+server.use(restify.plugins.queryParser({ mapParams: true}));
+server.use(restify.plugins.bodyParser({ mapParams: true}));
 
 server.listen(8080, function() {
   console.log('%s listening at %s', server.name, server.url);
@@ -36,6 +48,7 @@ server.listen(8080, function() {
 // Quiz End Points
 // Creat New Quiz
 server.post('/quiz', function(req, res, next) {
+  console.log(req.params);
   res.send(200, WIP);
   next();
 });

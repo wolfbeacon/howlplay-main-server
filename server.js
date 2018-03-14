@@ -9,13 +9,13 @@ var password = config.password ? config.password : null;
 
 //initiate database connection
 var sequelize = new Sequelize(
-    dialect: config.dialect,
-    database: config.database,
-    uase: config.user,
-    password: config.password,
+    config.database,
+    config.user,
+    password,
     {
+        dialect: config.dialect,
         port: config.port,
-        host: config.server,
+        host: config.host,
         logging: console.log,
         define: {
             timestamps: false

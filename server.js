@@ -42,10 +42,10 @@ sequelize
 
 //Models
 const Quizzes = sequelize.define('quizzes',{
+  id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
   name: {type: Sequelize.STRING(512)},
   questions: {type: Sequelize.STRING},
   access_token: {type: Sequelize.STRING(128)}
-
 });
 
 //Global Constants
@@ -55,7 +55,6 @@ var WIP = 'Endpoint not implemented yet';
 var server = restify.createServer();
 
 //Initualize Body Parser
-server.use(restify.plugins.queryParser({ mapParams: true}));
 server.use(restify.plugins.bodyParser({ mapParams: true}));
 
 // Start Server
@@ -64,13 +63,15 @@ server.listen(8080, function() {
 });
 
 // Quiz End Points
-// Creat New Quiz
+// Create New Quiz
 server.post('/quiz', function(req, res, next) {
-  var name = params.name;
-  var questions = param.question.stringify();
-  var access_token = uuidv4();
-  console.log(req.params.name);
-  res.send(200, WIP);
+  Quizzes.create({
+    name: req.params.name,
+    questions: JSON.stringify(req.params.questions),
+    access_token: uuidv4()
+  }).then(quiz => {
+    res.send(200, JSON.stringify(quiz));
+  });
   next();
 });
 // Get Quiz
@@ -80,11 +81,6 @@ server.get('/quiz/:id', function(req, res, next) {
 });
 // Update Quiz
 server.patch('/quiz/:id', function(req, res, next) {
-  res.send(200, WIP);
-  next();
-});
-// Upload Answers
-server.post('/quiz/answers/', function(req, res, next) {
   res.send(200, WIP);
   next();
 });

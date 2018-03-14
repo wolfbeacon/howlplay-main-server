@@ -100,6 +100,16 @@ server.get('/quiz/:quizId', function(req, res, next) {
 });
 // Update Quiz
 server.patch('/quiz/:id', function(req, res, next) {
-  res.send(200, WIP);
+  var json = {};
+  if (req.params.name != null){
+    json.name = req.params.name;
+  }
+  if (req.params.questions != null) {
+    json.questions = JSON.stringify(req.params.questions);
+  }
+  Quizzes.update(json,
+      {where: {id: req.params.id, access_token: req.params.access_token}}
+  ).then(quiz => {res.send(200,JSON.stringify(quiz));}
+  ).catch(err => {res.send(400, err);});
   next();
 });

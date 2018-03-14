@@ -1,6 +1,6 @@
 {
   "dev": {
-    "host": "jdbc:postgresql://howlplay-db.czfcpgzgc9ja.us-west-2.rds.amazonaws.com:5432/howlplay",
+    "host": "howlplay-db.czfcpgzgc9ja.us-west-2.rds.amazonaws.com",
     "dialect":  "postgres",
     "user": "howlplay",
     "port": "5432",

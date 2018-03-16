@@ -9,4 +9,4 @@ install:
   - npm i npm
 script:
 - npm -v
-- node server.js
+- node connectionTest.js

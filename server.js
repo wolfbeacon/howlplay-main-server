@@ -8,6 +8,9 @@ const env = "dev";
 const config = require('./config.json')[env];
 const password = config.password ? config.password : null;
 
+//middleware
+const QuizMiddleware = require('./quizMiddleware');
+
 //initiate database connection
 const sequelize = new Sequelize(
     config.database,
@@ -65,7 +68,7 @@ server.listen(8080, function () {
 
 // Quiz End Points
 // Create New Quiz
-server.post('/quiz', function (req, res, next) {
+server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) {
     if (req.params.name == null || req.params.questions == null) {
         res.send(400);
     }
@@ -102,7 +105,7 @@ server.get('/quiz/:quizId', function (req, res, next) {
 });
 
 // Update Quiz
-server.patch('/quiz/:id', function (req, res, next) {
+server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, function (req, res, next) {
     let json = {};
     if (req.params.name != null) {
         json.name = req.params.name;

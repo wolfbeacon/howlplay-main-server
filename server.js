@@ -105,6 +105,7 @@ server.get('/quiz/:quizId', function (req, res, next) {
 });
 
 // Update Quiz
+
 server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, function (req, res, next) {
     let json = {};
     if (req.params.name != null) {

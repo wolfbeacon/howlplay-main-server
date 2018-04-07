@@ -70,11 +70,12 @@ server.listen(port, function () {
 
 // Quiz End Points
 // Create New Quiz
-server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) {
+server.post('/quiz', QuizMiddleware.setQuizValidator,function (req, res, next) {
     if (req.params.name == null || req.params.questions == null) {
         res.send(400);
     }
     else {
+        console.log(req.params.questions);
         Quizzes.create({
             name: req.params.name,
             questions: JSON.stringify(req.params.questions),
@@ -86,8 +87,32 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) 
     next();
 });
 
+//Middleware
+const authenticate = function checkAuthorization(req, res, next) {
+        const tokens = req.header("Authorization");
+        if (tokens == null) {
+            res.send(401,{message: "not authenticated"} );
+            return next(false);
+        } else {
+        const token = tokens.split(" ")[1];
+        const id = req.params.id;
+        Quizzes.findOne({
+            attributes: ['id'], where: {
+                "id": id,
+                "access_token": token
+            }
+        }).then(Quiz => {
+            if(Quiz == null) {
+                res.send(401,{message: "not authenticated"} );
+                return next(false);
+            }
+        });
+        return next();
+    }
+}
+
 // Get Quiz
-server.get('/quiz/:quizId', function (req, res, next) {
+server.get('/quiz/:quizId',function (req, res, next) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
         attributes: ['id', 'name', 'questions'],
@@ -99,35 +124,40 @@ server.get('/quiz/:quizId', function (req, res, next) {
             res.send(400);
         }
         else {
-            const outString = (Quiz);
-            res.send(200, outString)
+            Quiz.questions = JSON.parse(Quiz.questions);
+            res.send(200, Quiz);
         }
     });
     next();
 });
 
 // Update Quiz
-server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, function (req, res, next) {
+
+server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res, next) {
     let json = {};
     if (req.params.name != null) {
         json.name = req.params.name;
     }
-    if (req.params.questions != null) {
-        json.questions = JSON.stringify(req.params.questions);
-    }
     Quizzes.update(json,
-        {where: {id: req.params.id, access_token: req.params.access_token}}
-    ).then(quiz => {
-            res.send(200, JSON.stringify(quiz));
-        }
+        {where: {id: req.params.id}}
     ).catch(err => {
         res.send(400, err);
+    });
+
+    Quizzes.findOne({
+        attributes: ['id', 'name', 'questions'],
+         where: {
+            "id": req.params.id
+        }
+    }).then(Quiz => {
+        Quiz.questions = JSON.parse(Quiz.questions);
+        res.send(200, Quiz);
     });
     next();
 });
 
 
-server.get('/', function (req, res, next) {
-   res.send('Hello World');
-   next();
-});
+//server.get('/', function (req, res, next) {
+//   res.send('Hello World');
+//   next();
+//});

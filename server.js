@@ -11,6 +11,8 @@ const password = config.password ? config.password : null;
 //middleware
 const QuizMiddleware = require('./quizMiddleware');
 
+const port = process.env.port || 8080;
+
 //initiate database connection
 const sequelize = new Sequelize(
     config.database,
@@ -62,7 +64,7 @@ server.use(restify.plugins.bodyParser({mapParams: true}));
 
 
 // Start Server
-server.listen(8080, function () {
+server.listen(port, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
 

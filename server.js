@@ -125,3 +125,9 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, function (req, res
     });
     next();
 });
+
+
+server.get('/', function (req, res, next) {
+   res.send('Hello World');
+   next();
+});

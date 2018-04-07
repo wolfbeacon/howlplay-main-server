@@ -4,6 +4,7 @@
   "description": "Main server for hosting quiz building options",
   "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Sean van Wyk",

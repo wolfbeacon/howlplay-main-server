@@ -11,11 +11,11 @@
   "license": "ISC",
   "repository": "  ",
   "dependencies": {
-    "nodemon": "^1.17.2",
     "npm": "^5.7.1",
     "pg": "^7.4.1",
     "pg-hstore": "^2.3.2",
     "restify": "^6.3.4",
+    "restify-cors-middleware": "^1.1.0",
     "restify-errors": "^6.0.0",
     "restify-plugins": "^1.6.0",
     "sequelize": "^4.35.2",

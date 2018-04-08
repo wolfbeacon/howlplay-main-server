@@ -164,12 +164,6 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
 });
 
 
-server.get('/', function (req, res, next) {
-  res.send('Hello World');
-  next();
-});
-
-
 server.get('/quizzes/:userID', async function (req, res, next) {
     let { userID } = req.params;
     if (!userID) {

@@ -63,15 +63,8 @@ const socketUrl = "ws://localhost:9090";
 // Create Server
 const server = restify.createServer();
 
-const corsMiddleware = require('restify-cors-middleware');
-
-const cors = corsMiddleware({origins: ['*']});
-
 // Initialize Body Parser
 server.use(restify.plugins.bodyParser({mapParams: true}));
-
-server.pre(cors.preflight);
-server.use(cors.actual);
 
 // Start Server
 server.listen(port, function () {

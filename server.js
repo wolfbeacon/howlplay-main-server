@@ -50,11 +50,15 @@ const Quizzes = sequelize.define('quizzes', {
     id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
     name: {type: Sequelize.STRING(512),},
     questions: {type: Sequelize.STRING,},
-    access_token: {type: Sequelize.STRING(128)}
+    access_token: {type: Sequelize.STRING(128)},
+    url: {type: Sequelize.STRING(128)},
+    code: {type: Sequelize.STRING(5)}
 });
 
 //Global Constants
 const WIP = 'Endpoint not implemented yet';
+
+const socketUrl = "ws://localhost:9090";
 
 // Create Server
 const server = restify.createServer();
@@ -116,7 +120,26 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) 
     next();
 });
 
-
+// PWA quiz login
+server.post('/pwa/game', function(req, res, next) {
+  var code = req.params.code;
+  if (!code) {
+    res.send(400);
+    return;
+  }
+  console.log(code);
+  Quizzes.findOne({
+    attributes: ['url'],
+    where: {'code' : code}
+  }).then(link => {
+    if (!link) {
+      res.send(500);
+      return;
+    }
+    res.status(200);
+    res.send(link);
+  })
+});
 
 // Get Quiz
 server.get('/quiz/:quizId',function (req, res, next) {

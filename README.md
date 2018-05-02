@@ -9,3 +9,17 @@
     * Upload Answers
   * Questions:
   * Hackers:
+
+#Endpoints
+##Create New Quiz
+* description: Create a new quiz
+* request: POST /quiz
+  * body: Array of objects
+    * name (String): Name of the quiz
+    * questions (Array of Strings) : Questions in the quiz
+    * owner (String) : Owner of the quiz
+* response:
+  * status : 200
+  * body : Quiz that was created
+* response
+  * status : 400

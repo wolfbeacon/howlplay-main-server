@@ -56,6 +56,8 @@ const Quizzes = sequelize.define('quizzes', {
 //Global Constants
 const WIP = 'Endpoint not implemented yet';
 
+const socketUrl = "ws://something.com";
+
 // Create Server
 const server = restify.createServer();
 
@@ -116,7 +118,17 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) 
     next();
 });
 
-
+// PWA quiz login
+server.post('/pwa/game', function(req, res, next) {
+  if (!(req.params.code)) {
+    res.send(400);
+    return;
+  }
+  console.log(req.params.code);
+  // Assuming that main server is hosted on another domain
+  res.status(200);
+  res.send(socketUrl);
+});
 
 // Get Quiz
 server.get('/quiz/:quizId',function (req, res, next) {

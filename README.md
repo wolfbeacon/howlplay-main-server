@@ -1,4 +1,4 @@
-#Howlplay Main Server
+# Howlplay Main Server
 
 **This package is the main server hosting the quiz creation and archive functionality.**
 **Included in this readme is a list of endpoints:**
@@ -10,8 +10,8 @@
   * Questions:
   * Hackers:
 
-#Endpoints
-##Create New Quiz
+# Endpoints
+## Create New Quiz
 * description: Create a new quiz
 * request: POST /quiz
   * body: Array of objects

@@ -52,7 +52,7 @@ const Quizzes = sequelize.define('quizzes', {
     questions: {type: Sequelize.STRING,},
     access_token: {type: Sequelize.STRING(128)},
     url: {type: Sequelize.STRING(128)}, // url to their game server
-    code: {type: Sequelize.STRING(5)}
+    code: {type: Sequelize.STRING(5), unique: true}
 });
 
 //Global Constants

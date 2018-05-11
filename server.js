@@ -51,7 +51,7 @@ const Quizzes = sequelize.define('quizzes', {
     name: {type: Sequelize.STRING(512),},
     questions: {type: Sequelize.STRING,},
     access_token: {type: Sequelize.STRING(128)},
-    url: {type: Sequelize.STRING(128)},
+    url: {type: Sequelize.STRING(128)}, // url to their game server
     code: {type: Sequelize.STRING(5)}
 });
 
@@ -105,14 +105,16 @@ const authenticate = function checkAuthorization(req, res, next) {
 // Quiz End Points
 // Create New Quiz
 server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) {
-    if (req.params.name == null || req.params.questions == null) {
+    if (!req.params.name || !req.params.questions || !req.params.url)  {
         res.send(400);
     } else {
         console.log(req.params.questions);
         Quizzes.create({
             name: req.params.name,
             questions: JSON.stringify(req.params.questions),
-            access_token: req.params.owner
+            access_token: req.params.owner,
+            url: req.params.url,
+            code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
             res.send(200, quiz);
         });
@@ -122,7 +124,7 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) 
 
 // PWA quiz login
 server.post('/pwa/game', function(req, res, next) {
-  var code = req.params.code;
+  const code = req.params.code;
   if (!code) {
     res.send(400);
     return;

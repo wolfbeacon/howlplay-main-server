@@ -145,7 +145,7 @@ server.post('/pwa/game', function(req, res, next) {
 server.get('/quiz/:quizId',function (req, res, next) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
-        attributes: ['id', 'name', 'questions'],
+        attributes: ['id', 'name', 'questions', 'url'],
         where: {
             "id": quizId
         }

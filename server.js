@@ -148,7 +148,7 @@ server.post('/pwa/game', function(req, res, next) {
 server.get('/quiz/:quizId',function (req, res, next) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
-        attributes: ['id', 'name', 'questions'],
+        attributes: ['id', 'name', 'questions', 'url'],
         where: {
             "id": quizId
         }
@@ -162,6 +162,35 @@ server.get('/quiz/:quizId',function (req, res, next) {
         }
     });
     next();
+});
+
+// Get access codes for all quizzes
+server.get('/quizzes/codes', function(req, res, next) {
+  Quizzes.findAll({
+    attributes: ['code']
+  }).then(data => {
+    if (data == null) {
+      res.send(500);
+      return;
+    }
+    res.send(200, data);
+  })
+});
+
+server.get('/quizzes/codes/:code', function(req, res, next){
+  let code = req.params.code;
+  Quizzes.findOne({
+    attributes: ['id', 'url'],
+    where: {
+      "code" : code
+    }
+  }).then(quiz => {
+    if (quiz == null) {
+      res.send(400);
+      return;
+    }
+    res.send(200, quiz);
+  });
 });
 
 // Update Quiz

@@ -161,6 +161,35 @@ server.get('/quiz/:quizId',function (req, res, next) {
     next();
 });
 
+// Get access codes for all quizzes
+server.get('/quizzes/codes', function(req, res, next) {
+  Quizzes.findAll({
+    attributes: ['code']
+  }).then(data => {
+    if (data == null) {
+      res.send(500);
+      return;
+    }
+    res.send(200, data);
+  })
+});
+
+server.get('/quizzes/codes/:code', function(req, res, next){
+  let code = req.params.code;
+  Quizzes.findOne({
+    attributes: ['id', 'url'],
+    where: {
+      "code" : code
+    }
+  }).then(quiz => {
+    if (quiz == null) {
+      res.send(400);
+      return;
+    }
+    res.send(200, quiz);
+  });
+});
+
 // Update Quiz
 
 server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res, next) {

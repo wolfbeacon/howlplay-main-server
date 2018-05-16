@@ -147,7 +147,9 @@ server.post('/pwa/game', function(req, res, next) {
 
 // Spin up a game server
 server.post('/spinup', function(req, res, next){
-  
+  let quiz_hash = req.body.hash;
+  let admin_key = req.body.key;
+  res.send(200);
 });
 
 // Get Quiz

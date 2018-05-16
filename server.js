@@ -2,6 +2,7 @@
 const restify = require('restify');
 const Sequelize = require('sequelize');
 const uuidv4 = require('uuid/v4');
+const shelljs = require('shelljs');
 
 //Database config
 const env = "dev";
@@ -142,6 +143,11 @@ server.post('/pwa/game', function(req, res, next) {
     res.status(200);
     res.send(quiz);
   })
+});
+
+// Spin up a game server
+server.post('/spinup', function(req, res, next){
+  
 });
 
 // Get Quiz

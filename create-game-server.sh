@@ -18,4 +18,4 @@ done
 
 # echo $QUIZ_HASH;
 # echo $ADMIN_KEY;
-docker run --env QUIZ_HASH=$QUIZ_HASH --env ADMIN_KEY=$ADMIN_KEY 48d90acd88cc
+docker run -d=true --env QUIZ_HASH=$QUIZ_HASH --env ADMIN_KEY=$ADMIN_KEY 48d90acd88cc

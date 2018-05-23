@@ -11,13 +11,13 @@
   "license": "ISC",
   "repository": "  ",
   "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
     "npm": "^5.7.1",
+    "morgan": "^1.9.0",
+    "cors": "^2.8.4",
     "pg": "^7.4.1",
     "pg-hstore": "^2.3.2",
-    "restify": "^6.3.4",
-    "restify-errors": "^6.0.0",
-    "restify-cors-middleware": "^1.1.0",
-    "restify-plugins": "^1.6.0",
     "sequelize": "^4.35.2",
     "shelljs": "^0.8.2",
     "uuid": "^3.2.1"

@@ -1,6 +1,6 @@
 const validateQustion = (question) => {
-    const {title, choices, answers} = question;
-    if (choices.length <= 0 || typeof title !== "string" || typeof answers !== "number") {
+    const {title, choices, answer} = question;
+    if (choices.length <= 0 || typeof title !== "string" || typeof answer !== "number") {
         return false;
     }
 
@@ -14,14 +14,14 @@ const validateQustion = (question) => {
 };
 
 const updateQuizValidator = (req, res, next) => {
-    const {name, questions} = req.params;
+    const {name, questions} = req.body;
     if (!name && !questions) {
         return res.send(400, "Requires a name or questions");
     } if (questions) {
         // validate questions
         for (let i = 0; i < questions.length; i++) {
             if (!validateQustion(questions[i])) {
-                return res.send(403, "Questions could not be validated");
+                return res.send(400, "Questions could not be validated");
             }
         }
     }
@@ -29,13 +29,13 @@ const updateQuizValidator = (req, res, next) => {
 };
 
 const setQuizValidator = (req, res, next) => {
-    const {name, questions} = req.params;
+    const {name, questions} = req.body;
     if (!name || !questions || questions.length <= 0) {
         return res.send(400, "Requires a name and at least 1 question");
     } else {
         for (let i = 0; i < questions.length; i++) {
             if (!validateQustion(questions[i])) {
-                return res.send(403, "Questions could not be validated");
+                return res.send(400, "Questions could not be validated");
             }
         }
     }

@@ -2,6 +2,8 @@
 const restify = require('restify');
 const Sequelize = require('sequelize');
 const uuidv4 = require('uuid/v4');
+const shelljs = require('shelljs');
+const crypto = require('crypto');
 
 //Database config
 const env = "dev";
@@ -142,6 +144,17 @@ server.post('/pwa/game', function(req, res, next) {
     res.status(200);
     res.send(quiz);
   })
+});
+
+// Spin up a game server
+server.post('/spinup', function(req, res, next){
+  let data = JSON.parse(req.body);
+  let quiz_hash = crypto.createHash('md5').update(data.details).digest('base64');
+  let admin_key = data.key;
+
+  shelljs.exec('bash ./create-game-server.sh QUIZ_HASH:' + quiz_hash + ' ADMIN_KEY:' + admin_key);
+
+  res.send(200);
 });
 
 // Get Quiz

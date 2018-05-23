@@ -1,5 +1,5 @@
 //Imports and Requirements
-const restify = require('restify');
+const express = require('express');
 const Sequelize = require('sequelize');
 const uuidv4 = require('uuid/v4');
 
@@ -61,42 +61,40 @@ const WIP = 'Endpoint not implemented yet';
 const socketUrl = "ws://localhost:9090";
 
 // Create Server
-const server = restify.createServer();
+const server = express();
 
-const corsMiddleware = require('restify-cors-middleware');
-
-const cors = corsMiddleware({origins: ['https://howlplaydashboard.azurewebsites.net']});
+const bodyParser = require('body-parser');
+const morgan = require('morgan');
+const cors = require('cors');
 
 // Initialize Body Parser
-server.use(restify.plugins.bodyParser({mapParams: true}));
+server.use(bodyParser.json());
+server.use(cors());
+server.use(morgan('tiny'));
 
-server.pre(cors.preflight);
-server.use(cors.actual);
-
-// Start Server
-server.listen(port, function () {
-    console.log('%s listening at %s', server.name, server.url);
-});
 
 //Middleware
 const authenticate = function checkAuthorization(req, res, next) {
     const tokens = req.header("Authorization");
     if (tokens == null) {
-        res.send(401,{message: "not authenticated"} );
+        res.status(401).send("Not authenticated");
         return next(false);
     } else {
         const token = tokens.split(" ")[1];
         const id = req.params.id;
+        console.log(id);
         Quizzes.findOne({
             attributes: ['access_token'], where: {
                 "id": id,
             }
         }).then(Quiz => {
             console.log(Quiz);
-            if(Quiz == null) {
-                res.send(401,{message: "not authenticated"} );
+            if(Quiz == null || Quiz.access_token !== token) {
+                res.status(401).send("Not authenticated");
                 return next(false);
             }
+        }).catch(err => {
+            res.status(500).send(err);
         });
         return next();
     }
@@ -105,28 +103,27 @@ const authenticate = function checkAuthorization(req, res, next) {
 // Quiz End Points
 // Create New Quiz
 server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) {
-    if (!req.params.name || !req.params.questions || !req.params.url)  {
-        res.send(400);
+    if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
+        res.status(400).send();
     } else {
-        console.log(req.params.questions);
+        console.log(req.body.questions);
         Quizzes.create({
-            name: req.params.name,
-            questions: JSON.stringify(req.params.questions),
-            access_token: req.params.owner,
-            url: req.params.url,
+            name: req.body.name,
+            questions: JSON.stringify(req.body.questions),
+            access_token: req.body.owner,
+            url: req.body.url,
             code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
-            res.send(200, quiz);
+            res.send(quiz);
         });
     }
-    next();
 });
 
 // PWA quiz login
 server.post('/pwa/game', function(req, res, next) {
-  const code = req.params.code;
+  const code = req.body.code;
   if (!code) {
-    res.send(400);
+    res.status(400).send();
     return;
   }
   console.log(code);
@@ -136,45 +133,42 @@ server.post('/pwa/game', function(req, res, next) {
   }).then(quiz => {
     console.log(quiz);
     if (!quiz) {
-      res.send(500);
+      res.status(500).send();
       return;
     }
-    res.status(200);
     res.send(quiz);
   })
 });
 
 // Get Quiz
-server.get('/quiz/:quizId',function (req, res, next) {
+server.get('/quiz/:quizId', function (req, res, next) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
-        attributes: ['id', 'name', 'questions'],
+        attributes: ['id', 'name', 'questions', 'url'],
         where: {
             "id": quizId
         }
     }).then(Quiz => {
         if (Quiz == null) {
-            res.send(400);
+            res.status(400).send();
         }
         else {
             Quiz.questions = JSON.parse(Quiz.questions);
-            res.send(200, Quiz);
+            res.status(200).send(Quiz)
         }
     });
-    next();
 });
 
 // Update Quiz
-
 server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res, next) {
     let json = {};
-    if (req.params.name != null) {
-        json.name = req.params.name;
+    if (req.body.name != null) {
+        json.name = req.body.name;
     }
     Quizzes.update(json,
         {where: {id: req.params.id}}
     ).catch(err => {
-        res.send(400, err);
+        res.status(400).send(err);
     });
 
     Quizzes.findOne({
@@ -184,35 +178,40 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
         }
     }).then(Quiz => {
         Quiz.questions = JSON.parse(Quiz.questions);
-        res.send(200, Quiz);
+        res.status(200).send(Quiz);
     });
-    next();
 });
 
 
 server.get('/quizzes/:userID', async function (req, res, next) {
     let { userID } = req.params;
     if (!userID) {
-        res.send(400, "Requires UserID");
+        res.status(400).send("Requires UserID");
     } else {
         try {
             let quizzes = await Quizzes.findAll({where: {"access_token": userID}});
             res.send(quizzes);
         } catch (e) {
             console.log(e);
-            res.send(500, `Could not get quizzes for ${userID}`);
+            res.status(500).send(`Could not get quizzes for ${userID}`);
         }
 
     }
 });
 
 server.post('/login', function (req, res, next) {
-   let { username, password } = req.params;
+   let { username, password } = req.body;
    if (username !== "LeBron" || password !== "James") {
-       res.send(401, "Invalid Username or Password");
+       res.statu(401).send("Invalid Username or Password");
    } else {
        res.send({
            access_token: "ABC123"
        })
    }
+});
+
+
+// Start Server
+server.listen(port, function () {
+    console.log(`Server listening on ${port}`);
 });

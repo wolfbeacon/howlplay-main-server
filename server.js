@@ -131,18 +131,18 @@ server.post('/pwa/game', function(req, res, next) {
     res.send(400);
     return;
   }
-  console.log(code);
+
   Quizzes.findOne({
     attributes: ['id', 'url'],
     where: {'code' : code}
   }).then(quiz => {
-    console.log(quiz);
+    console.log(quiz.dataValues);
     if (!quiz) {
       res.send(500);
       return;
     }
     res.status(200);
-    res.send(quiz);
+    res.send(quiz.dataValues);
   })
 });
 

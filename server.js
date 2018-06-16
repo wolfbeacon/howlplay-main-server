@@ -239,14 +239,14 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     next();
 });
 
-
 server.get('/quizzes/:userID', async function (req, res, next) {
     let { userID } = req.params;
+    console.log(userID);
     if (!userID) {
         res.send(400, "Requires UserID");
     } else {
         try {
-            let quizzes = await Quizzes.findAll({where: {"access_token": userID}});
+            let quizzes = await Organizers.findAll({where: {"access_token": userID}});
             res.send(quizzes);
         } catch (e) {
             console.log(e);

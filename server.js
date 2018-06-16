@@ -48,14 +48,22 @@ sequelize
     });
 
 //Models
+const Organizers = sequelize.define('organizers', {
+    id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
+    username: {type: Sequelize.STRING(512),},
+    access_token: {type: Sequelize.STRING,}
+});
+
 const Quizzes = sequelize.define('quizzes', {
     id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
     name: {type: Sequelize.STRING(512),},
     questions: {type: Sequelize.STRING,},
-    access_token: {type: Sequelize.STRING(128)},
+    organizer: {type: Sequelize.INTEGER},
     url: {type: Sequelize.STRING(128)}, // url to their game server
     code: {type: Sequelize.STRING(5), unique: true}
 });
+
+Quizzes.belongsTo(Organizers, {as: 'quizzesfk'});
 
 //Global Constants
 const WIP = 'Endpoint not implemented yet';
@@ -89,13 +97,13 @@ const authenticate = function checkAuthorization(req, res, next) {
     } else {
         const token = tokens.split(" ")[1];
         const id = req.params.id;
-        Quizzes.findOne({
+        Organizers.findOne({
             attributes: ['access_token'], where: {
                 "id": id,
             }
-        }).then(Quiz => {
-            console.log(Quiz);
-            if(Quiz == null) {
+        }).then(org => {
+            console.log(org);
+            if(org == null) {
                 res.send(401,{message: "not authenticated"} );
                 return next(false);
             }
@@ -114,7 +122,7 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res, next) 
         Quizzes.create({
             name: req.params.name,
             questions: JSON.stringify(req.params.questions),
-            access_token: req.params.owner,
+            organizer: req.params.owner,
             url: req.params.url,
             code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
@@ -231,14 +239,14 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     next();
 });
 
-
 server.get('/quizzes/:userID', async function (req, res, next) {
     let { userID } = req.params;
+    console.log(userID);
     if (!userID) {
         res.send(400, "Requires UserID");
     } else {
         try {
-            let quizzes = await Quizzes.findAll({where: {"access_token": userID}});
+            let quizzes = await Organizers.findAll({where: {"access_token": userID}});
             res.send(quizzes);
         } catch (e) {
             console.log(e);

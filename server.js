@@ -2,6 +2,8 @@
 const express = require('express');
 const Sequelize = require('sequelize');
 const uuidv4 = require('uuid/v4');
+const shelljs = require('shelljs');
+const crypto = require('crypto');
 
 //Database config
 const env = "dev";
@@ -46,14 +48,22 @@ sequelize
     });
 
 //Models
+const Organizers = sequelize.define('organizers', {
+    id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
+    username: {type: Sequelize.STRING(512),},
+    access_token: {type: Sequelize.STRING,}
+});
+
 const Quizzes = sequelize.define('quizzes', {
     id: {type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true},
     name: {type: Sequelize.STRING(512),},
     questions: {type: Sequelize.STRING,},
-    access_token: {type: Sequelize.STRING(128)},
+    organizer: {type: Sequelize.INTEGER},
     url: {type: Sequelize.STRING(128)}, // url to their game server
     code: {type: Sequelize.STRING(5), unique: true}
 });
+
+Quizzes.belongsTo(Organizers, {as: 'quizzesfk'});
 
 //Global Constants
 const WIP = 'Endpoint not implemented yet';
@@ -74,45 +84,43 @@ server.use(morgan('tiny'));
 
 
 //Middleware
-const authenticate = async (req, res, next) => {
+const authenticate = function checkAuthorization(req, res, next) {
     const tokens = req.header("Authorization");
     if (tokens == null) {
         res.status(401).send("Not authenticated");
+        return next(false);
     } else {
         const token = tokens.split(" ")[1];
         const id = req.params.id;
-        try {
-            let quiz = await Quizzes.findOne({
-                attributes: ['access_token'], where: {
-                    "id": id,
-                }
-            });
-            if (!quiz) {
-                res.status(404).send(`Could not find quiz with id: ${id}`);
-            } else if (quiz.access_token === token) {
-                next();
-            } else {
-                res.status(401).send();
+        Organizers.findOne({
+            attributes: ['access_token'], where: {
+                "id": id,
             }
-        } catch (err) {
-            console.log(err);
-            res.status(500).send();
-        }
+        }).then(org => {
+            console.log(org);
+            if(org == null) {
+                res.status(401).send("Not authenticated");
+                return next(false);
+            }
+        }).catch(err => {
+            res.status(500).send(err);
+        });
+        return next();
     }
 };
 
 // Quiz End Points
 // Create New Quiz
-server.post('/quiz', QuizMiddleware.setQuizValidator, (req, res) => {
+server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
     if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
         res.status(400).send();
     } else {
         console.log(req.body.questions);
         Quizzes.create({
-            name: req.body.name,
-            questions: JSON.stringify(req.body.questions),
-            access_token: req.body.owner,
-            url: req.body.url,
+            name: req.params.name,
+            questions: JSON.stringify(req.params.questions),
+            organizer: req.params.owner,
+            url: req.params.url,
             code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
             res.send(quiz);
@@ -121,28 +129,39 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, (req, res) => {
 });
 
 // PWA quiz login
-server.post('/pwa/game', (req, res) => {
-  const code = req.body.code;
-  if (!code) {
-    res.status(400).send();
-    return;
-  }
-  console.log(code);
-  Quizzes.findOne({
-    attributes: ['id', 'url'],
-    where: {'code' : code}
-  }).then(quiz => {
-    console.log(quiz);
-    if (!quiz) {
-      res.status(500).send();
-      return;
+server.post('/pwa/game', function(req, res) {
+    const code = req.body.code;
+    if (!code) {
+        res.status(400).send();
+        return;
     }
-    res.send(quiz);
-  })
+
+    Quizzes.findOne({
+        attributes: ['id', 'url'],
+        where: {'code' : code}
+    }).then(quiz => {
+        console.log(quiz.dataValues);
+        if (!quiz) {
+            res.status(500).send();
+            return;
+        }
+        res.send(quiz.dataValues);
+    })
+});
+
+// Spin up a game server
+server.post('/spinup', function(req, res){
+    let data = JSON.parse(req.body);
+    let quiz_hash = crypto.createHash('md5').update(data.details).digest('base64');
+    let admin_key = data.key;
+
+    shelljs.exec('bash ./create-game-server.sh QUIZ_HASH:' + quiz_hash + ' ADMIN_KEY:' + admin_key);
+
+    res.send();
 });
 
 // Get Quiz
-server.get('/quiz/:quizId', (req, res) => {
+server.get('/quiz/:quizId', function (req, res) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
         attributes: ['id', 'name', 'questions', 'url'],
@@ -160,8 +179,37 @@ server.get('/quiz/:quizId', (req, res) => {
     });
 });
 
+// Get access codes for all quizzes
+server.get('/quizzes/codes', function(req, res) {
+    Quizzes.findAll({
+        attributes: ['code']
+    }).then(data => {
+        if (data == null) {
+            res.status(500).send();
+            return;
+        }
+        res.status(500).send(data);
+    })
+});
+
+server.get('/quizzes/codes/:code', function(req, res){
+    let code = req.params.code;
+    Quizzes.findOne({
+        attributes: ['id', 'url'],
+        where: {
+            "code" : code
+        }
+    }).then(quiz => {
+        if (quiz == null) {
+            res.status(400).send();
+            return;
+        }
+        res.send(quiz);
+    });
+});
+
 // Update Quiz
-server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate,  (req, res) => {
+server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res) {
     let json = {};
     if (req.body.name != null) {
         json.name = req.body.name;
@@ -174,7 +222,7 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate,  (re
 
     Quizzes.findOne({
         attributes: ['id', 'name', 'questions'],
-         where: {
+        where: {
             "id": req.params.id
         }
     }).then(Quiz => {
@@ -183,28 +231,14 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate,  (re
     });
 });
 
-
-server.delete('/quiz/:id', authenticate, (req, res) => {
-    Quizzes.destroy({
-        where: {
-            id: req.params.id
-        }
-    }).then(() => {
-        res.send(`Deleted Quiz with id ${req.params.id}`);
-    }).catch((err) => {
-        console.log(err);
-        res.status(500).send("Could not delete quiz");
-    });
-});
-
-
-server.get('/quizzes/:userID', async (req, res) => {
+server.get('/quizzes/:userID', async function (req, res) {
     let { userID } = req.params;
+    console.log(userID);
     if (!userID) {
         res.status(400).send("Requires UserID");
     } else {
         try {
-            let quizzes = await Quizzes.findAll({where: {"access_token": userID}});
+            let quizzes = await Organizers.findAll({where: {"access_token": userID}});
             res.send(quizzes);
         } catch (e) {
             console.log(e);
@@ -214,20 +248,21 @@ server.get('/quizzes/:userID', async (req, res) => {
     }
 });
 
-server.post('/login', (req, res) => {
-   let { username, password } = req.body;
-   if (username !== "LeBron" || password !== "James") {
-       res.statu(401).send("Invalid Username or Password");
-   } else {
-       res.send({
-           access_token: "ABC123"
-       })
-   }
+server.post('/login', function (req, res) {
+    let { username, password } = req.body;
+    if (username !== "LeBron" || password !== "James") {
+        res.statu(401).send("Invalid Username or Password");
+    } else {
+        res.send({
+            access_token: "ABC123"
+        })
+    }
 });
 
 server.get('/', (req, res) => {
-   res.send('API is running')
+    res.send('API is Running');
 });
+
 
 // Start Server
 server.listen(port, function () {

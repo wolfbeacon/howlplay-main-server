@@ -225,6 +225,10 @@ server.post('/login', (req, res) => {
    }
 });
 
+server.get('/', (req, res) => {
+   res.send('API is running')
+});
+
 // Start Server
 server.listen(port, function () {
     console.log(`Server listening on ${port}`);

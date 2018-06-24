@@ -11,7 +11,10 @@
   "license": "ISC",
   "repository": "  ",
   "dependencies": {
+    "cookie": "^0.3.1",
     "npm": "^5.7.1",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0",
     "pg": "^7.4.1",
     "pg-hstore": "^2.3.2",
     "restify": "^6.3.4",

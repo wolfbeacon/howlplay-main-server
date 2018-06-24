@@ -4,6 +4,9 @@ const Sequelize = require('sequelize');
 const uuidv4 = require('uuid/v4');
 const shelljs = require('shelljs');
 const crypto = require('crypto');
+const cookie = require('cookie');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
 
 //Database config
 const env = "dev";
@@ -63,7 +66,7 @@ const Quizzes = sequelize.define('quizzes', {
     code: {type: Sequelize.STRING(5), unique: true}
 });
 
-Quizzes.belongsTo(Organizers, {as: 'quizzesfk'});
+// Quizzes.belongsTo(Organizers, {as: 'quizzes'});
 
 //Global Constants
 const WIP = 'Endpoint not implemented yet';
@@ -82,6 +85,32 @@ server.use(restify.plugins.bodyParser({mapParams: true}));
 
 server.pre(cors.preflight);
 server.use(cors.actual);
+
+passport.use(new LocalStrategy(
+  function(accessToken, cb) {
+    Organizers.findOne(
+      {where: {"access_token": accessToken}}
+    ).then(data => {
+      if (!data) { return cb(null, false); }
+      return cb(null, data);
+    })
+  }
+))
+
+passport.serializeUser((user, done) => {
+  // User is passed in from Local Strategy - only runs when a user first authenticates
+  // User's session has is hashed
+  // User is attached to req.User
+  return done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  // takes the session hash and de-hashes it and checks if it's legit or not
+  // Runs on every subsequent request
+  return done(null, user);
+});
+
+server.use(passport.initialize());
 
 // Start Server
 server.listen(port, function () {
@@ -111,6 +140,24 @@ const authenticate = function checkAuthorization(req, res, next) {
         return next();
     }
 };
+
+// server.use(function(req, res, next){
+//   console.log(req.headers.cookie);
+//     username = 'Blyat';
+//     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
+//           path : '/',
+//           maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+//           httpOnly: true
+//     }));
+//     res.setHeader('Access-Control-Allow-Credentials', true);
+//     next();
+// });
+
+// server.use(function(req, res, next) {
+//     console.warn('run for all routes!');
+//     return next();
+// });
+
 
 // Quiz End Points
 // Create New Quiz
@@ -239,21 +286,46 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     next();
 });
 
-server.get('/quizzes/:userID', async function (req, res, next) {
-    let { userID } = req.params;
-    console.log(userID);
-    if (!userID) {
-        res.send(400, "Requires UserID");
+server.post('/dashboard/signin', async function (req, res, next) {
+    let accessToken = JSON.parse(req.body).token;
+    console.log(accessToken);
+    if (!accessToken) {
+        res.send(400, "Requires accessToken");
     } else {
         try {
-            let quizzes = await Organizers.findAll({where: {"access_token": userID}});
+            let quizzes = await Organizers.findOne({where: {"access_token": accessToken}});
+            console.log(quizzes.dataValues.id);
+            let id = quizzes.dataValues.id;
+            res.setHeader('Set-Cookie', cookie.serialize('id', id, {
+                  path : '/',
+                  maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+                  httpOnly: true,
+                  sameSite: true
+            }));
+            res.setHeader('Access-Control-Allow-Credentials', true);
             res.send(quizzes);
         } catch (e) {
             console.log(e);
-            res.send(500, `Could not get quizzes for ${userID}`);
+            res.send(500, `Could not get quizzes for ${accessToken}`);
         }
 
     }
+});
+
+server.get('/organizers/:id/quizzes/', function (req, res, next) {
+    let id = req.params.id;
+    console.log(id);
+    if (!id) { return res.send(400, "Requires UserID"); }
+
+    Quizzes.findAll(
+      {
+        where: {"organizer": id}
+      }
+    )
+    .then(data => {
+      console.log(data);
+      return res.send(200, data);
+    });
 });
 
 server.post('/login', function (req, res, next) {

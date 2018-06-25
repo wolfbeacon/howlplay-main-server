@@ -5,8 +5,6 @@ const uuidv4 = require('uuid/v4');
 const shelljs = require('shelljs');
 const crypto = require('crypto');
 const cookie = require('cookie');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
 
 //Database config
 const env = "dev";
@@ -85,32 +83,6 @@ server.use(restify.plugins.bodyParser({mapParams: true}));
 
 server.pre(cors.preflight);
 server.use(cors.actual);
-
-passport.use(new LocalStrategy(
-  function(accessToken, cb) {
-    Organizers.findOne(
-      {where: {"access_token": accessToken}}
-    ).then(data => {
-      if (!data) { return cb(null, false); }
-      return cb(null, data);
-    })
-  }
-))
-
-passport.serializeUser((user, done) => {
-  // User is passed in from Local Strategy - only runs when a user first authenticates
-  // User's session has is hashed
-  // User is attached to req.User
-  return done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-  // takes the session hash and de-hashes it and checks if it's legit or not
-  // Runs on every subsequent request
-  return done(null, user);
-});
-
-server.use(passport.initialize());
 
 // Start Server
 server.listen(port, function () {
@@ -201,6 +173,32 @@ server.post('/pwa/game', function(req, res, next) {
   })
 });
 
+server.post('/dashboard/signin', async function (req, res, next) {
+    let accessToken = JSON.parse(req.body).token;
+    console.log(accessToken);
+    if (!accessToken) {
+        res.send(400, "Requires accessToken");
+    } else {
+        try {
+            let quizzes = await Organizers.findOne({where: {"access_token": accessToken}});
+            console.log(quizzes.dataValues.id);
+            let id = quizzes.dataValues.id;
+            res.setHeader('Set-Cookie', cookie.serialize('id', id, {
+                  path : '/',
+                  maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+                  httpOnly: true,
+                  sameSite: true
+            }));
+            res.setHeader('Access-Control-Allow-Credentials', true);
+            res.send(quizzes);
+        } catch (e) {
+            console.log(e);
+            res.send(500, `Could not get quizzes for ${accessToken}`);
+        }
+
+    }
+});
+
 // Spin up a game server
 server.post('/spinup', function(req, res, next){
   let data = JSON.parse(req.body);
@@ -284,32 +282,6 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
         res.send(200, Quiz);
     });
     next();
-});
-
-server.post('/dashboard/signin', async function (req, res, next) {
-    let accessToken = JSON.parse(req.body).token;
-    console.log(accessToken);
-    if (!accessToken) {
-        res.send(400, "Requires accessToken");
-    } else {
-        try {
-            let quizzes = await Organizers.findOne({where: {"access_token": accessToken}});
-            console.log(quizzes.dataValues.id);
-            let id = quizzes.dataValues.id;
-            res.setHeader('Set-Cookie', cookie.serialize('id', id, {
-                  path : '/',
-                  maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-                  httpOnly: true,
-                  sameSite: true
-            }));
-            res.setHeader('Access-Control-Allow-Credentials', true);
-            res.send(quizzes);
-        } catch (e) {
-            console.log(e);
-            res.send(500, `Could not get quizzes for ${accessToken}`);
-        }
-
-    }
 });
 
 server.get('/organizers/:id/quizzes/', function (req, res, next) {

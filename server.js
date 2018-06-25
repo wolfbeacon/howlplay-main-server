@@ -276,7 +276,6 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     });
 });
 
-<<<<<<< HEAD
 server.get('/organizers/:id/quizzes/', function (req, res, next) {
     let id = req.params.id;
     console.log(id);
@@ -291,23 +290,6 @@ server.get('/organizers/:id/quizzes/', function (req, res, next) {
       console.log(data);
       return res.send(200, data);
     });
-=======
-server.get('/quizzes/:userID', async function (req, res) {
-    let { userID } = req.params;
-    console.log(userID);
-    if (!userID) {
-        res.status(400).send("Requires UserID");
-    } else {
-        try {
-            let quizzes = await Organizers.findAll({where: {"access_token": userID}});
-            res.send(quizzes);
-        } catch (e) {
-            console.log(e);
-            res.status(500).send(`Could not get quizzes for ${userID}`);
-        }
-
-    }
->>>>>>> master
 });
 
 server.post('/login', function (req, res) {

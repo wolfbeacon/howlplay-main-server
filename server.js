@@ -126,6 +126,7 @@ const authenticate = function checkAuthorization(req, res, next) {
 
 const verifyUser = function verifyToken(req, res, next) {
   let parsedCookie = cookie.parse(req.headers.cookie);
+  console.log(parsedCookie)
   let token = parsedCookie.token;
   jwt.verify(token, secret, function(err, decoded) {
     if (err) { return res.send(401, 'access denied') }
@@ -186,16 +187,37 @@ server.post('/dashboard/signin', function (req, res, next) {
       console.log(quizzes.dataValues.id);
       let id = quizzes.dataValues.id;
       let token = jwt.sign({id : id}, secret);
-      console.log('token: ', token);
-      res.setHeader('Set-Cookie', cookie.serialize('token', token, {
+      let setCookie = [];
+      setCookie.push(cookie.serialize('token', token, {
             path : '/',
             maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
             httpOnly: true,
             sameSite: true
       }));
+      res.setHeader('Set-Cookie', setCookie);
 
       res.send(quizzes);
     })
+});
+
+server.get('/dashboard/quizzes', verifyUser, function (req, res, next) {
+    let parsedCookie = cookie.parse(req.headers.cookie);
+    let token = parsedCookie.token;
+    jwt.verify(token, secret, function(err, decoded) {
+      if (err) { console.log("Failed"); return res.send(401, 'access denied') }
+      console.log('decoded', decoded);
+      let id = decoded.id;
+      if (!id) { return res.send(400, "Requires UserID"); }
+
+      Quizzes.findAll(
+        {
+          where: {"organizer": id}
+        }
+      )
+      .then(data => {
+        return res.send(200, data);
+      });
+    });
 });
 
 // Spin up a game server
@@ -277,21 +299,6 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     }).then(Quiz => {
         Quiz.questions = JSON.parse(Quiz.questions);
         res.status(200).send(Quiz);
-    });
-});
-
-server.get('/organizers/:id/quizzes/', verifyUser, function (req, res, next) {
-    let id = req.params.id;
-    let token = req.cookies;
-    if (!id) { return res.send(400, "Requires UserID"); }
-
-    Quizzes.findAll(
-      {
-        where: {"organizer": id}
-      }
-    )
-    .then(data => {
-      return res.send(200, data);
     });
 });
 

@@ -92,7 +92,7 @@ const corsSettings = {
 }
 
 // Initialize Body Parser
-server.use(bodyParser.urlencoded({ extended: true }));
+// server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 server.use(cors(corsSettings));
 server.use(morgan('tiny'));
@@ -123,6 +123,15 @@ const authenticate = function checkAuthorization(req, res, next) {
         return next();
     }
 };
+
+const verifyUser = function verifyToken(req, res, next) {
+  let parsedCookie = cookie.parse(req.headers.cookie);
+  let token = parsedCookie.token;
+  jwt.verify(token, secret, function(err, decoded) {
+    if (err) { return res.send(401, 'access denied') }
+    next();
+  });
+}
 
 // server.options('*', cors(corsSettings))
 
@@ -271,9 +280,9 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     });
 });
 
-server.get('/organizers/:id/quizzes/', function (req, res, next) {
+server.get('/organizers/:id/quizzes/', verifyUser, function (req, res, next) {
     let id = req.params.id;
-    console.log(id);
+    let token = req.cookies;
     if (!id) { return res.send(400, "Requires UserID"); }
 
     Quizzes.findAll(

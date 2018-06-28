@@ -5,11 +5,15 @@ const uuidv4 = require('uuid/v4');
 const shelljs = require('shelljs');
 const crypto = require('crypto');
 const cookie = require('cookie');
+const jwt = require('jsonwebtoken');
 
 //Database config
 const env = "dev";
 const config = require('./config.json')[env];
 const password = config.password ? config.password : null;
+
+// JWT stuff
+const secret = 'super-secret';
 
 //middleware
 const QuizMiddleware = require('./quizMiddleware');
@@ -78,9 +82,19 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
 
+// CORS settings
+const corsSettings = {
+  "origin": true,
+  "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  "preflightContinue": false,
+  "optionsSuccessStatus": 200,
+  "credentials" : true
+}
+
 // Initialize Body Parser
+server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
-server.use(cors());
+server.use(cors(corsSettings));
 server.use(morgan('tiny'));
 
 
@@ -110,23 +124,7 @@ const authenticate = function checkAuthorization(req, res, next) {
     }
 };
 
-// server.use(function(req, res, next){
-//   console.log(req.headers.cookie);
-//     username = 'Blyat';
-//     res.setHeader('Set-Cookie', cookie.serialize('username', username, {
-//           path : '/',
-//           maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-//           httpOnly: true
-//     }));
-//     res.setHeader('Access-Control-Allow-Credentials', true);
-//     next();
-// });
-
-// server.use(function(req, res, next) {
-//     console.warn('run for all routes!');
-//     return next();
-// });
-
+// server.options('*', cors(corsSettings))
 
 // Quiz End Points
 // Create New Quiz
@@ -168,35 +166,32 @@ server.post('/pwa/game', function(req, res) {
     })
 });
 
-server.post('/dashboard/signin', async function (req, res, next) {
-    let accessToken = JSON.parse(req.body).token;
-    console.log(accessToken);
+server.post('/dashboard/signin', function (req, res, next) {
+    let accessToken = req.body.token;
     if (!accessToken) {
-        res.send(400, "Requires accessToken");
-    } else {
-        try {
-            let quizzes = await Organizers.findOne({where: {"access_token": accessToken}});
-            console.log(quizzes.dataValues.id);
-            let id = quizzes.dataValues.id;
-            res.setHeader('Set-Cookie', cookie.serialize('id', id, {
-                  path : '/',
-                  maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-                  httpOnly: true,
-                  sameSite: true
-            }));
-            res.setHeader('Access-Control-Allow-Credentials', true);
-            res.send(quizzes);
-        } catch (e) {
-            console.log(e);
-            res.send(500, `Could not get quizzes for ${accessToken}`);
-        }
-
+        return res.send(400, "Requires accessToken");
     }
+
+    Organizers.findOne({where: {"access_token": accessToken}})
+    .then(quizzes => {
+      console.log(quizzes.dataValues.id);
+      let id = quizzes.dataValues.id;
+      let token = jwt.sign({id : id}, secret);
+      console.log('token: ', token);
+      res.setHeader('Set-Cookie', cookie.serialize('token', token, {
+            path : '/',
+            maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+            httpOnly: true,
+            sameSite: true
+      }));
+
+      res.send(quizzes);
+    })
 });
 
 // Spin up a game server
 server.post('/spinup', function(req, res){
-    let data = JSON.parse(req.body);
+    let data = body;
     let quiz_hash = crypto.createHash('md5').update(data.details).digest('base64');
     let admin_key = data.key;
 
@@ -287,7 +282,6 @@ server.get('/organizers/:id/quizzes/', function (req, res, next) {
       }
     )
     .then(data => {
-      console.log(data);
       return res.send(200, data);
     });
 });

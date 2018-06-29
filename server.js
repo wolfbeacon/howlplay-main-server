@@ -5,11 +5,15 @@ const uuidv4 = require('uuid/v4');
 const shelljs = require('shelljs');
 const crypto = require('crypto');
 const cookie = require('cookie');
+const jwt = require('jsonwebtoken');
 
 //Database config
 const env = "dev";
 const config = require('./config.json')[env];
 const password = config.password ? config.password : null;
+
+// JWT stuff
+const secret = 'super-secret';
 
 //middleware
 const QuizMiddleware = require('./quizMiddleware');
@@ -64,7 +68,7 @@ const Quizzes = sequelize.define('quizzes', {
     code: {type: Sequelize.STRING(5), unique: true}
 });
 
-Quizzes.belongsTo(Organizers, {as: 'quizzesfk'});
+// Quizzes.belongsTo(Organizers, {as: 'quizzes'});
 
 //Global Constants
 const WIP = 'Endpoint not implemented yet';
@@ -88,6 +92,7 @@ const corsSettings = {
 }
 
 // Initialize Body Parser
+// server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 server.use(cors(corsSettings));
 server.use(morgan('tiny'));
@@ -118,6 +123,18 @@ const authenticate = function checkAuthorization(req, res, next) {
         return next();
     }
 };
+
+const verifyUser = function verifyToken(req, res, next) {
+  let parsedCookie = cookie.parse(req.headers.cookie);
+  console.log(parsedCookie)
+  let token = parsedCookie.token;
+  jwt.verify(token, secret, function(err, decoded) {
+    if (err) { return res.send(401, 'access denied') }
+    next();
+  });
+}
+
+// server.options('*', cors(corsSettings))
 
 // Quiz End Points
 // Create New Quiz
@@ -159,9 +176,53 @@ server.post('/pwa/game', function(req, res) {
     })
 });
 
+server.post('/dashboard/signin', function (req, res, next) {
+    let accessToken = req.body.token;
+    if (!accessToken) {
+        return res.send(400, "Requires accessToken");
+    }
+
+    Organizers.findOne({where: {"access_token": accessToken}})
+    .then(quizzes => {
+      console.log(quizzes.dataValues.id);
+      let id = quizzes.dataValues.id;
+      let token = jwt.sign({id : id}, secret);
+      let setCookie = [];
+      setCookie.push(cookie.serialize('token', token, {
+            path : '/',
+            maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+            httpOnly: true,
+            sameSite: true
+      }));
+      res.setHeader('Set-Cookie', setCookie);
+
+      res.send(quizzes);
+    })
+});
+
+server.get('/dashboard/quizzes', verifyUser, function (req, res, next) {
+    let parsedCookie = cookie.parse(req.headers.cookie);
+    let token = parsedCookie.token;
+    jwt.verify(token, secret, function(err, decoded) {
+      if (err) { console.log("Failed"); return res.send(401, 'access denied') }
+      console.log('decoded', decoded);
+      let id = decoded.id;
+      if (!id) { return res.send(400, "Requires UserID"); }
+
+      Quizzes.findAll(
+        {
+          where: {"organizer": id}
+        }
+      )
+      .then(data => {
+        return res.send(200, data);
+      });
+    });
+});
+
 // Spin up a game server
 server.post('/spinup', function(req, res){
-    let data = JSON.parse(req.body);
+    let data = body;
     let quiz_hash = crypto.createHash('md5').update(data.details).digest('base64');
     let admin_key = data.key;
 
@@ -251,23 +312,6 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
         Quiz.questions = JSON.parse(Quiz.questions);
         res.status(200).send(Quiz);
     });
-});
-
-server.get('/quizzes/:userID', async function (req, res) {
-    let { userID } = req.params;
-    console.log(userID);
-    if (!userID) {
-        res.status(400).send("Requires UserID");
-    } else {
-        try {
-            let quizzes = await Organizers.findAll({where: {"access_token": userID}});
-            res.send(quizzes);
-        } catch (e) {
-            console.log(e);
-            res.status(500).send(`Could not get quizzes for ${userID}`);
-        }
-
-    }
 });
 
 server.post('/login', function (req, res) {

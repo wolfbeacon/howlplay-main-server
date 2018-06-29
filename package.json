@@ -11,6 +11,9 @@
   "license": "ISC",
   "repository": "  ",
   "dependencies": {
+    "cookie": "^0.3.1",
+    "jsonwebtoken": "^8.3.0",
+    "npm": "^5.7.1",
     "body-parser": "^1.18.3",
     "cookie": "^0.3.1",
     "cors": "^2.8.4",

@@ -4,6 +4,7 @@ const Sequelize = require('sequelize');
 const uuidv4 = require('uuid/v4');
 const shelljs = require('shelljs');
 const crypto = require('crypto');
+const cookie = require('cookie');
 
 //Database config
 const env = "dev";
@@ -77,9 +78,18 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
 
+// CORS settings
+const corsSettings = {
+  "origin": true,
+  "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  "preflightContinue": false,
+  "optionsSuccessStatus": 200,
+  "credentials" : true
+}
+
 // Initialize Body Parser
 server.use(bodyParser.json());
-server.use(cors());
+server.use(cors(corsSettings));
 server.use(morgan('tiny'));
 
 
@@ -159,6 +169,18 @@ server.post('/spinup', function(req, res){
 
     res.send();
 });
+
+// Sign out of dashboard
+server.get('/dashboard/signout', function(req, res, next) {
+  res.setHeader('Set-Cookie', cookie.serialize('token', '', {
+        path : '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+        httpOnly: true,
+        sameSite: true
+  }));
+  // res.redirect('/');
+  res.send();
+})
 
 // Get Quiz
 server.get('/quiz/:quizId', function (req, res) {

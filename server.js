@@ -231,6 +231,18 @@ server.post('/spinup', function(req, res){
     res.send();
 });
 
+// Sign out of dashboard
+server.get('/dashboard/signout', function(req, res, next) {
+  res.setHeader('Set-Cookie', cookie.serialize('token', '', {
+        path : '/',
+        maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+        httpOnly: true,
+        sameSite: true
+  }));
+  // res.redirect('/');
+  res.send();
+})
+
 // Get Quiz
 server.get('/quiz/:quizId', function (req, res) {
     const quizId = req.params.quizId;

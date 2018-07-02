@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 //Database config
 const env = "dev";
 const config = require('./config.json')[env];
-const password = config.password ? config.password : null;
+const password = config.password || null;
 
 // JWT stuff
 const secret = 'super-secret';
@@ -84,12 +84,9 @@ const cors = require('cors');
 
 // CORS settings
 const corsSettings = {
-  "origin": true,
-  "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-  "preflightContinue": false,
-  "optionsSuccessStatus": 200,
-  "credentials" : true
-}
+    origin: ["howlplay.com", "dashboard.howlplay.com"],
+    credentials : true
+};
 
 // Initialize Body Parser
 // server.use(bodyParser.urlencoded({ extended: true }));
@@ -99,7 +96,7 @@ server.use(morgan('tiny'));
 
 
 //Middleware
-const authenticate = function checkAuthorization(req, res, next) {
+const authenticate = (req, res, next) => {
     const tokens = req.header("Authorization");
     if (tokens == null) {
         res.status(401).send("Not authenticated");
@@ -124,15 +121,15 @@ const authenticate = function checkAuthorization(req, res, next) {
     }
 };
 
-const verifyUser = function verifyToken(req, res, next) {
+const verifyUser = (req, res, next) => {
   let parsedCookie = cookie.parse(req.headers.cookie);
-  console.log(parsedCookie)
+  console.log(parsedCookie);
   let token = parsedCookie.token;
   jwt.verify(token, secret, function(err, decoded) {
     if (err) { return res.send(401, 'access denied') }
     next();
   });
-}
+};
 
 // server.options('*', cors(corsSettings))
 

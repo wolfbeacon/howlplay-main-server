@@ -141,15 +141,17 @@ const verifyUser = (req, res, next) => {
 // Quiz End Points
 // Create New Quiz
 server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
+  console.log("Creating quiz")
     if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
+      console.log("error when creating quiz")
         res.status(400).send();
     } else {
         console.log(req.body.questions);
         Quizzes.create({
-            name: req.params.name,
-            questions: JSON.stringify(req.params.questions),
-            organizer: req.params.owner,
-            url: req.params.url,
+            name: req.body.name,
+            questions: JSON.stringify(req.body.questions),
+            organizer: req.body.owner,
+            url: req.body.url,
             code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
             res.send(quiz);

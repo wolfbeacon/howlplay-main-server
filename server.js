@@ -82,9 +82,16 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
 
+const whitelist=["https://howlplay.com", "https://dashboard.howlplay.com"];
+
 // CORS settings
 const corsSettings = {
-    origin: ["https://howlplay.com", "https://dashboard.howlplay.com"],
+    origin: function (origin, callback) {
+        if (whitelist.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+    }},
     credentials : true
 };
 

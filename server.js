@@ -84,7 +84,7 @@ const cors = require('cors');
 
 // CORS settings
 const corsSettings = {
-    origin: ["howlplay.com", "dashboard.howlplay.com"],
+    origin: ["https://howlplay.com", "https://dashboard.howlplay.com"],
     credentials : true
 };
 

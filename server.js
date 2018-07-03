@@ -86,13 +86,11 @@ const whitelist=["https://howlplay.com", "https://dashboard.howlplay.com"];
 
 // CORS settings
 const corsSettings = {
-    origin: function (origin, callback) {
-        if (whitelist.indexOf(origin) !== -1) {
-            callback(null, true)
-        } else {
-            callback(new Error('Not allowed by CORS'))
-    }},
-    credentials : true
+    "origin": true,
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    "preflightContinue": false,
+    "optionsSuccessStatus": 200,
+    "credentials" : true
 };
 
 // Initialize Body Parser

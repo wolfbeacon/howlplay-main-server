@@ -140,7 +140,7 @@ const verifyUser = (req, res, next) => {
 
 // Quiz End Points
 // Create New Quiz
-server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
+server.post('/dashboard/quizzes', QuizMiddleware.setQuizValidator, function (req, res) {
   console.log("Creating quiz")
     if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
       console.log("error when creating quiz")

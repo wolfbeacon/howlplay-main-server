@@ -94,7 +94,6 @@ const corsSettings = {
 };
 
 // Initialize Body Parser
-// server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 server.use(cors(corsSettings));
 server.use(morgan('tiny'));
@@ -132,6 +131,9 @@ const verifyUser = (req, res, next) => {
   let token = parsedCookie.token;
   jwt.verify(token, secret, function(err, decoded) {
     if (err) { return res.send(401, 'access denied') }
+    else {
+        req.id = decoded.id;
+    }
     next();
   });
 };
@@ -202,24 +204,15 @@ server.post('/dashboard/signin', function (req, res, next) {
     })
 });
 
-server.get('/dashboard/quizzes', verifyUser, function (req, res, next) {
-    let parsedCookie = cookie.parse(req.headers.cookie);
-    let token = parsedCookie.token;
-    jwt.verify(token, secret, function(err, decoded) {
-      if (err) { console.log("Failed"); return res.send(401, 'access denied') }
-      console.log('decoded', decoded);
-      let id = decoded.id;
-      if (!id) { return res.send(400, "Requires UserID"); }
-
-      Quizzes.findAll(
-        {
-          where: {"organizer": id}
-        }
-      )
-      .then(data => {
-        return res.send(200, data);
-      });
-    });
+server.get('/quizzes', verifyUser, async function (req, res) {
+    let {id} = req;
+    try {
+        let quizzes = await Quizzes.findAll({where: {"organizer": id}});
+        res.send(quizzes);
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err);
+    }
 });
 
 // Spin up a game server
@@ -243,13 +236,13 @@ server.get('/dashboard/signout', function(req, res, next) {
   }));
   // res.redirect('/');
   res.send();
-})
+});
 
 // Get Quiz
 server.get('/quiz/:quizId', function (req, res) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
-        attributes: ['id', 'name', 'questions', 'url'],
+        attributes: ['id', 'name', 'questions', 'url', 'code'],
         where: {
             "id": quizId
         }

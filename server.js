@@ -81,9 +81,6 @@ const whitelist=["https://howlplay.com", "https://dashboard.howlplay.com"];
 // CORS settings
 const corsSettings = {
     "origin": true,
-    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    "preflightContinue": false,
-    "optionsSuccessStatus": 200,
     "credentials" : true
 };
 

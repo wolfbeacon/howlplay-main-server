@@ -126,38 +126,26 @@ const authenticate = (req, res, next) => {
 };
 
 const verifyUser = (req, res, next) => {
-  let parsedCookie = cookie.parse(req.headers.cookie);
-  console.log(parsedCookie);
-  let token = parsedCookie.token;
-  jwt.verify(token, secret, function(err, decoded) {
-    if (err) { return res.send(401, 'access denied') }
-    else {
-        req.id = decoded.id;
+    try {
+        let parsedCookie = cookie.parse(req.headers.cookie);console.log(parsedCookie);
+        let token = parsedCookie.token;
+        jwt.verify(token, secret, function(err, decoded) {
+            if (err) {res.status(401).send('access denied');}
+            else {
+                req.id = decoded.id;
+                next();
+            }
+        });
+
+    } catch (err) {
+        res.status(401).send('access denied');
     }
-    next();
-  });
 };
 
 // server.options('*', cors(corsSettings))
 
 // Quiz End Points
-// Create New Quiz
-server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
-    if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
-        res.status(400).send();
-    } else {
-        console.log(req.body.questions);
-        Quizzes.create({
-            name: req.params.name,
-            questions: JSON.stringify(req.params.questions),
-            organizer: req.params.owner,
-            url: req.params.url,
-            code: Math.floor(Math.random()*90000) + 10000
-        }).then(quiz => {
-            res.send(quiz);
-        });
-    }
-});
+
 
 // PWA quiz login
 server.post('/pwa/game', function(req, res) {
@@ -238,6 +226,25 @@ server.get('/dashboard/signout', function(req, res, next) {
   res.send();
 });
 
+
+// Create New Quiz
+server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
+    if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
+        res.status(400).send();
+    } else {
+        console.log(req.body.questions);
+        Quizzes.create({
+            name: req.params.name,
+            questions: JSON.stringify(req.params.questions),
+            organizer: req.params.owner,
+            url: req.params.url,
+            code: Math.floor(Math.random()*90000) + 10000
+        }).then(quiz => {
+            res.send(quiz);
+        });
+    }
+});
+
 // Get Quiz
 server.get('/quiz/:quizId', function (req, res) {
     const quizId = req.params.quizId;
@@ -254,6 +261,19 @@ server.get('/quiz/:quizId', function (req, res) {
             Quiz.questions = JSON.parse(Quiz.questions);
             res.status(200).send(Quiz)
         }
+    });
+});
+
+server.delete('/quiz/:id', verifyUser, (req, res) => {
+    Quizzes.destroy({
+        where: {
+            id: req.params.id
+        }
+    }).then(() => {
+        res.send(`Deleted Quiz with id ${req.params.id}`);
+    }).catch((err) => {
+        console.log(err);
+        res.status(500).send("Could not delete quiz");
     });
 });
 

@@ -189,8 +189,6 @@ server.post('/dashboard/signin', function (req, res, next) {
       setCookie.push(cookie.serialize('token', token, {
             path : '/',
             maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-            httpOnly: true,
-            sameSite: true
       }));
       res.setHeader('Set-Cookie', setCookie);
 

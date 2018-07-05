@@ -80,7 +80,7 @@ const whitelist=["https://howlplay.com", "https://dashboard.howlplay.com"];
 
 // CORS settings
 const corsSettings = {
-    "origin": true,
+    "origin": ["https://dashboard.howlplay.com", 'https://howlplay.com'],
     "credentials" : true
 };
 
@@ -187,7 +187,7 @@ server.post('/dashboard/signin', function (req, res, next) {
           maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
       });
 
-      res.send(quizzes);
+      res.send({token: token});
     })
 });
 

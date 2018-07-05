@@ -94,7 +94,6 @@ const corsSettings = {
 };
 
 // Initialize Body Parser
-// server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 server.use(cors(corsSettings));
 server.use(morgan('tiny'));
@@ -127,37 +126,26 @@ const authenticate = (req, res, next) => {
 };
 
 const verifyUser = (req, res, next) => {
-  let parsedCookie = cookie.parse(req.headers.cookie);
-  console.log(parsedCookie);
-  let token = parsedCookie.token;
-  jwt.verify(token, secret, function(err, decoded) {
-    if (err) { return res.send(401, 'access denied') }
-    next();
-  });
+    try {
+        let parsedCookie = cookie.parse(req.headers.cookie);console.log(parsedCookie);
+        let token = parsedCookie.token;
+        jwt.verify(token, secret, function(err, decoded) {
+            if (err) {res.status(401).send('access denied');}
+            else {
+                req.id = decoded.id;
+                next();
+            }
+        });
+
+    } catch (err) {
+        res.status(401).send('access denied');
+    }
 };
 
 // server.options('*', cors(corsSettings))
 
 // Quiz End Points
-// Create New Quiz
-server.post('/dashboard/quizzes', QuizMiddleware.setQuizValidator, function (req, res) {
-  console.log("Creating quiz")
-    if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
-      console.log("error when creating quiz")
-        res.status(400).send();
-    } else {
-        console.log(req.body.questions);
-        Quizzes.create({
-            name: req.body.name,
-            questions: JSON.stringify(req.body.questions),
-            organizer: req.body.owner,
-            url: req.body.url,
-            code: Math.floor(Math.random()*90000) + 10000
-        }).then(quiz => {
-            res.send(quiz);
-        });
-    }
-});
+
 
 // PWA quiz login
 server.post('/pwa/game', function(req, res) {
@@ -204,24 +192,15 @@ server.post('/dashboard/signin', function (req, res, next) {
     })
 });
 
-server.get('/dashboard/quizzes', verifyUser, function (req, res, next) {
-    let parsedCookie = cookie.parse(req.headers.cookie);
-    let token = parsedCookie.token;
-    jwt.verify(token, secret, function(err, decoded) {
-      if (err) { console.log("Failed"); return res.send(401, 'access denied') }
-      console.log('decoded', decoded);
-      let id = decoded.id;
-      if (!id) { return res.send(400, "Requires UserID"); }
-
-      Quizzes.findAll(
-        {
-          where: {"organizer": id}
-        }
-      )
-      .then(data => {
-        return res.send(200, data);
-      });
-    });
+server.get('/quizzes', verifyUser, async function (req, res) {
+    let {id} = req;
+    try {
+        let quizzes = await Quizzes.findAll({where: {"organizer": id}});
+        res.send(quizzes);
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err);
+    }
 });
 
 // Spin up a game server
@@ -245,13 +224,31 @@ server.get('/dashboard/signout', function(req, res, next) {
   }));
   // res.redirect('/');
   res.send();
-})
+});
+
+
+// Create New Quiz
+server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
+    if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
+        res.status(400).send();
+    } else {
+        Quizzes.create({
+            name: req.body.name,
+            questions: JSON.stringify(req.body.questions),
+            organizer: req.body.owner,
+            url: req.body.url,
+            code: Math.floor(Math.random()*90000) + 10000
+        }).then(quiz => {
+            res.send(quiz);
+        });
+    }
+});
 
 // Get Quiz
 server.get('/quiz/:quizId', function (req, res) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
-        attributes: ['id', 'name', 'questions', 'url'],
+        attributes: ['id', 'name', 'questions', 'url', 'code'],
         where: {
             "id": quizId
         }
@@ -263,6 +260,42 @@ server.get('/quiz/:quizId', function (req, res) {
             Quiz.questions = JSON.parse(Quiz.questions);
             res.status(200).send(Quiz)
         }
+    });
+});
+
+// Update Quiz
+server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res) {
+    let json = {};
+    if (req.body.name != null) {
+        json.name = req.body.name;
+    }
+    Quizzes.update(json,
+        {where: {id: req.params.id}}
+    ).catch(err => {
+        res.status(400).send(err);
+    });
+
+    Quizzes.findOne({
+        attributes: ['id', 'name', 'questions'],
+        where: {
+            "id": req.params.id
+        }
+    }).then(Quiz => {
+        Quiz.questions = JSON.parse(Quiz.questions);
+        res.status(200).send(Quiz);
+    });
+});
+
+server.delete('/quiz/:id', verifyUser, (req, res) => {
+    Quizzes.destroy({
+        where: {
+            id: req.params.id
+        }
+    }).then(() => {
+        res.send(`Deleted Quiz with id ${req.params.id}`);
+    }).catch((err) => {
+        console.log(err);
+        res.status(500).send("Could not delete quiz");
     });
 });
 
@@ -295,28 +328,6 @@ server.get('/quizzes/codes/:code', function(req, res){
     });
 });
 
-// Update Quiz
-server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res) {
-    let json = {};
-    if (req.body.name != null) {
-        json.name = req.body.name;
-    }
-    Quizzes.update(json,
-        {where: {id: req.params.id}}
-    ).catch(err => {
-        res.status(400).send(err);
-    });
-
-    Quizzes.findOne({
-        attributes: ['id', 'name', 'questions'],
-        where: {
-            "id": req.params.id
-        }
-    }).then(Quiz => {
-        Quiz.questions = JSON.parse(Quiz.questions);
-        res.status(200).send(Quiz);
-    });
-});
 
 server.post('/login', function (req, res) {
     let { username, password } = req.body;

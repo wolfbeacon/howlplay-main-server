@@ -185,12 +185,10 @@ server.post('/dashboard/signin', function (req, res, next) {
       console.log(quizzes.dataValues.id);
       let id = quizzes.dataValues.id;
       let token = jwt.sign({id : id}, secret);
-      let setCookie = [];
-      setCookie.push(cookie.serialize('token', token, {
-            path : '/',
-            maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-      }));
-      res.setHeader('Set-Cookie', setCookie);
+      res.cookie('token', token, {
+          path : '/',
+          maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+      });
 
       res.send(quizzes);
     })

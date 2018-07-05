@@ -232,12 +232,11 @@ server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
     if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
         res.status(400).send();
     } else {
-        console.log(req.body.questions);
         Quizzes.create({
-            name: req.params.name,
-            questions: JSON.stringify(req.params.questions),
-            organizer: req.params.owner,
-            url: req.params.url,
+            name: req.body.name,
+            questions: JSON.stringify(req.body.questions),
+            organizer: req.body.owner,
+            url: req.body.url,
             code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
             res.send(quiz);
@@ -261,6 +260,29 @@ server.get('/quiz/:quizId', function (req, res) {
             Quiz.questions = JSON.parse(Quiz.questions);
             res.status(200).send(Quiz)
         }
+    });
+});
+
+// Update Quiz
+server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res) {
+    let json = {};
+    if (req.body.name != null) {
+        json.name = req.body.name;
+    }
+    Quizzes.update(json,
+        {where: {id: req.params.id}}
+    ).catch(err => {
+        res.status(400).send(err);
+    });
+
+    Quizzes.findOne({
+        attributes: ['id', 'name', 'questions'],
+        where: {
+            "id": req.params.id
+        }
+    }).then(Quiz => {
+        Quiz.questions = JSON.parse(Quiz.questions);
+        res.status(200).send(Quiz);
     });
 });
 
@@ -306,28 +328,6 @@ server.get('/quizzes/codes/:code', function(req, res){
     });
 });
 
-// Update Quiz
-server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res) {
-    let json = {};
-    if (req.body.name != null) {
-        json.name = req.body.name;
-    }
-    Quizzes.update(json,
-        {where: {id: req.params.id}}
-    ).catch(err => {
-        res.status(400).send(err);
-    });
-
-    Quizzes.findOne({
-        attributes: ['id', 'name', 'questions'],
-        where: {
-            "id": req.params.id
-        }
-    }).then(Quiz => {
-        Quiz.questions = JSON.parse(Quiz.questions);
-        res.status(200).send(Quiz);
-    });
-});
 
 server.post('/login', function (req, res) {
     let { username, password } = req.body;

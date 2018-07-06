@@ -75,10 +75,11 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
 
+whitelist = (process.env.ENV === 'PROD') ? ["https://dashboard.howlplay.com", 'https://howlplay.com'] : ['http://localhost:3000'];
 
 // CORS settings
 const corsSettings = {
-    "origin": ["https://dashboard.howlplay.com", 'https://howlplay.com'], // note this cannot be a wildcard or true
+    "origin": whitelist, // note this cannot be a wildcard or true
     "credentials" : true
 };
 

@@ -76,11 +76,10 @@ const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const cors = require('cors');
 
-const whitelist=["https://howlplay.com", "https://dashboard.howlplay.com"];
 
 // CORS settings
 const corsSettings = {
-    "origin": ["https://dashboard.howlplay.com", 'https://howlplay.com'],
+    "origin": ["https://dashboard.howlplay.com", 'https://howlplay.com'], // note this cannot be a wildcard or true
     "credentials" : true
 };
 

@@ -1,7 +1,6 @@
 //Imports and Requirements
 const express = require('express');
 const Sequelize = require('sequelize');
-const uuidv4 = require('uuid/v4');
 const shelljs = require('shelljs');
 const crypto = require('crypto');
 const cookie = require('cookie');
@@ -88,33 +87,6 @@ server.use(bodyParser.json());
 server.use(cors(corsSettings));
 server.use(morgan('tiny'));
 
-
-//Middleware
-const authenticate = (req, res, next) => {
-    const tokens = req.header("Authorization");
-    if (tokens == null) {
-        res.status(401).send("Not authenticated");
-        return next(false);
-    } else {
-        const token = tokens.split(" ")[1];
-        const id = req.params.id;
-        Organizers.findOne({
-            attributes: ['access_token'], where: {
-                "id": id,
-            }
-        }).then(org => {
-            console.log(org);
-            if(org == null) {
-                res.status(401).send("Not authenticated");
-                return next(false);
-            }
-        }).catch(err => {
-            res.status(500).send(err);
-        });
-        return next();
-    }
-};
-
 const verifyUser = (req, res, next) => {
   let parsedCookie = cookie.parse(req.headers.cookie);
   console.log(parsedCookie);
@@ -132,15 +104,15 @@ const verifyUser = (req, res, next) => {
 
 // Quiz End Points
 // Create New Quiz
-server.post('/quiz', QuizMiddleware.setQuizValidator, function (req, res) {
-    if (!req.body.name || !req.body.questions || !req.body.url || !req.body.owner)  {
+server.post('/quiz', [verifyUser, QuizMiddleware.setQuizValidator], function (req, res) {
+    if (!req.body.name || !req.body.questions || !req.body.url)  {
         res.status(400).send();
     } else {
         console.log(req.body.questions);
         Quizzes.create({
             name: req.params.name,
             questions: JSON.stringify(req.params.questions),
-            organizer: req.params.owner,
+            organizer: req.id,
             url: req.params.url,
             code: Math.floor(Math.random()*90000) + 10000
         }).then(quiz => {
@@ -212,25 +184,14 @@ server.post('/spinup', function(req, res){
     res.send();
 });
 
-// Sign out of dashboard
-server.get('/dashboard/signout', function(req, res, next) {
-  res.setHeader('Set-Cookie', cookie.serialize('token', '', {
-        path : '/',
-        maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
-        httpOnly: true,
-        sameSite: true
-  }));
-  // res.redirect('/');
-  res.send();
-});
-
 // Get Quiz
-server.get('/quiz/:quizId', function (req, res) {
+server.get('/quiz/:quizId', verifyUser, function (req, res) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
         attributes: ['id', 'name', 'questions', 'url', 'code'],
         where: {
-            "id": quizId
+            "id": quizId,
+            organizer: req.id
         }
     }).then(Quiz => {
         if (Quiz == null) {
@@ -243,43 +204,18 @@ server.get('/quiz/:quizId', function (req, res) {
     });
 });
 
-// Get access codes for all quizzes
-server.get('/quizzes/codes', function(req, res) {
-    Quizzes.findAll({
-        attributes: ['code']
-    }).then(data => {
-        if (data == null) {
-            res.status(500).send();
-            return;
-        }
-        res.status(500).send(data);
-    })
-});
-
-server.get('/quizzes/codes/:code', function(req, res){
-    let code = req.params.code;
-    Quizzes.findOne({
-        attributes: ['id', 'url'],
-        where: {
-            "code" : code
-        }
-    }).then(quiz => {
-        if (quiz == null) {
-            res.status(400).send();
-            return;
-        }
-        res.send(quiz);
-    });
-});
-
 // Update Quiz
-server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, function (req, res) {
+server.patch('/quiz/:id', [verifyUser, QuizMiddleware.updateQuizValidator], function (req, res) {
     let json = {};
     if (req.body.name != null) {
         json.name = req.body.name;
     }
-    Quizzes.update(json,
-        {where: {id: req.params.id}}
+    Quizzes.update(json, {
+        where: {
+            id: req.params.id,
+            organizer: req.id
+        }
+    }
     ).catch(err => {
         res.status(400).send(err);
     });
@@ -287,7 +223,8 @@ server.patch('/quiz/:id', QuizMiddleware.updateQuizValidator, authenticate, func
     Quizzes.findOne({
         attributes: ['id', 'name', 'questions'],
         where: {
-            "id": req.params.id
+            id: req.params.id,
+            organizer: req.id
         }
     }).then(Quiz => {
         Quiz.questions = JSON.parse(Quiz.questions);

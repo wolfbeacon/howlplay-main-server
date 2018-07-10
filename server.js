@@ -9,7 +9,6 @@ const jwt = require('jsonwebtoken');
 //Database config
 const env = "dev";
 const config = require('./config.json')[env];
-const password = config.password || null;
 
 // JWT stuff
 const secret = 'super-secret';
@@ -101,27 +100,6 @@ const verifyUser = (req, res, next) => {
   });
 };
 
-// server.options('*', cors(corsSettings))
-
-// Quiz End Points
-// Create New Quiz
-server.post('/quiz', [verifyUser, QuizMiddleware.setQuizValidator], function (req, res) {
-    if (!req.body.name || !req.body.questions || !req.body.url)  {
-        res.status(400).send();
-    } else {
-        console.log(req.body.questions);
-        Quizzes.create({
-            name: req.params.name,
-            questions: JSON.stringify(req.params.questions),
-            organizer: req.id,
-            url: req.params.url,
-            code: Math.floor(Math.random()*90000) + 10000
-        }).then(quiz => {
-            res.send(quiz);
-        });
-    }
-});
-
 // PWA quiz login
 server.post('/pwa/game', function(req, res) {
     const code = req.body.code;
@@ -185,14 +163,32 @@ server.post('/spinup', function(req, res){
     res.send();
 });
 
-// Get Quiz
-server.get('/quiz/:quizId', verifyUser, function (req, res) {
+// Quiz End Points
+// Create New Quiz
+server.post('/quiz', [verifyUser, QuizMiddleware.setQuizValidator], function (req, res) {
+    if (!req.body.name || !req.body.questions || !req.body.url)  {
+        res.status(400).send();
+    } else {
+        console.log(req.body.questions);
+        Quizzes.create({
+            name: req.params.name,
+            questions: JSON.stringify(req.params.questions),
+            organizer: req.id,
+            url: req.params.url,
+            code: Math.floor(Math.random()*90000) + 10000
+        }).then(quiz => {
+            res.send(quiz);
+        });
+    }
+});
+
+// Get Quiz by ID
+server.get('/quiz/:quizId', function (req, res) {
     const quizId = req.params.quizId;
     Quizzes.findOne({
         attributes: ['id', 'name', 'questions', 'url', 'code'],
         where: {
-            "id": quizId,
-            organizer: req.id
+            id: quizId,
         }
     }).then(Quiz => {
         if (Quiz == null) {
@@ -204,6 +200,26 @@ server.get('/quiz/:quizId', verifyUser, function (req, res) {
         }
     });
 });
+
+// Get Quiz by Code
+server.get('/quiz/:quizId', function (req, res) {
+    const {code} = req.params;
+    Quizzes.findOne({
+        attributes: ['id', 'name', 'questions', 'url', 'code'],
+        where: {
+            code: code
+        }
+    }).then(Quiz => {
+        if (Quiz == null) {
+            res.status(400).send();
+        }
+        else {
+            Quiz.questions = JSON.parse(Quiz.questions);
+            res.status(200).send(Quiz)
+        }
+    });
+});
+
 
 // Update Quiz
 server.patch('/quiz/:id', [verifyUser, QuizMiddleware.updateQuizValidator], function (req, res) {
@@ -232,6 +248,21 @@ server.patch('/quiz/:id', [verifyUser, QuizMiddleware.updateQuizValidator], func
         res.status(200).send(Quiz);
     });
 });
+
+server.delete('/quiz/:id', verifyUser, (req, res) => {
+    Quizzes.destroy({
+        where: {
+            id: req.params.id
+        }
+    }).then(() => {
+        res.send(`Deleted Quiz with id ${req.params.id}`);
+    }).catch((err) => {
+        console.log(err);
+        res.status(500).send("Could not delete quiz");
+    });
+});
+
+
 
 server.post('/login', function (req, res) {
     let { username, password } = req.body;
